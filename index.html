@@ -8,7 +8,27 @@
 <div id="stats"></div>
 
 <script>
-let stats=JSON.parse(localStorage.getItem("stats")||'{"date":"","today":0,"correct":0,"total":0,"streak":0}')
+<script>
+
+let review=JSON.parse(localStorage.getItem("reviewWords")||"{}")
+
+function markWrong(word){
+if(!review[word]){
+review[word]={count:1,next:Date.now()+86400000}
+}else{
+review[word].count++
+review[word].next=Date.now()+review[word].count*86400000
+}
+localStorage.setItem("reviewWords",JSON.stringify(review))
+}
+
+function getReviewWords(){
+let now=Date.now()
+return Object.keys(review).filter(w=>review[w].next<=now)
+}
+
+</script>
+  let stats=JSON.parse(localStorage.getItem("stats")||'{"date":"","today":0,"correct":0,"total":0,"streak":0}')
 
 let today=new Date().toISOString().slice(0,10)
 
