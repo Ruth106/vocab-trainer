@@ -2,76 +2,39 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>IELTS + Theology Vocabulary Trainer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vocabulary Trainer Pro</title>
+
+<meta name="theme-color" content="#2f6fed">
 
 <style>
-<div id="stats"></div>
-
-<script>
-<script>
-
-let review=JSON.parse(localStorage.getItem("reviewWords")||"{}")
-
-function markWrong(word){
-if(!review[word]){
-review[word]={count:1,next:Date.now()+86400000}
-}else{
-review[word].count++
-review[word].next=Date.now()+review[word].count*86400000
-}
-localStorage.setItem("reviewWords",JSON.stringify(review))
-}
-
-function getReviewWords(){
-let now=Date.now()
-return Object.keys(review).filter(w=>review[w].next<=now)
-}
-
-</script>
-  let stats=JSON.parse(localStorage.getItem("stats")||'{"date":"","today":0,"correct":0,"total":0,"streak":0}')
-
-let today=new Date().toISOString().slice(0,10)
-
-if(stats.date!==today){
-let yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10)
-stats.streak=(stats.date===yesterday)?stats.streak+1:1
-stats.today=0
-stats.date=today
-}
-
-function record(correct){
-stats.today++
-stats.total++
-if(correct)stats.correct++
-localStorage.setItem("stats",JSON.stringify(stats))
-render()
-}
-
-function render(){
-let rate=stats.total?Math.round(stats.correct/stats.total*100):0
-document.getElementById("stats").innerHTML=
-"今日学习 "+stats.today+" 个<br>正确率 "+rate+"%<br>连续学习 "+stats.streak+" 天"
-}
-
-render()
-</script>
 body{
 font-family:Arial;
+margin:0;
 background:#f2f4f7;
 text-align:center;
+}
+
+.dark{
+background:#121212;
+color:white;
 }
 
 h1{
 margin-top:20px;
 }
 
+#stats{
+margin:10px;
+}
+
 .controls{
-margin:20px;
+margin:15px;
 }
 
 button{
-padding:10px 15px;
-margin:5px;
+padding:10px 14px;
+margin:4px;
 border:none;
 border-radius:6px;
 background:#2f6fed;
@@ -79,279 +42,170 @@ color:white;
 cursor:pointer;
 }
 
-.container{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
+.dark button{
+background:#444;
 }
 
 .card{
-width:260px;
+width:320px;
 height:200px;
-margin:12px;
-perspective:1000px;
-cursor:pointer;
-}
-
-.inner{
-position:relative;
-width:100%;
-height:100%;
-transition:transform .6s;
-transform-style:preserve-3d;
-}
-
-.card.flip .inner{
-transform:rotateY(180deg);
-}
-
-.front,.back{
-position:absolute;
-width:100%;
-height:100%;
-border-radius:10px;
-backface-visibility:hidden;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-padding:15px;
-box-shadow:0 4px 10px rgba(0,0,0,0.15);
-text-align:center;
-}
-
-.front{
+margin:20px auto;
 background:white;
-font-size:20px;
-font-weight:bold;
+border-radius:12px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:26px;
+box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
-.front span{
-font-size:14px;
-color:#666;
+.dark .card{
+background:#1e1e1e;
 }
 
-.back{
-background:#2f6fed;
-color:white;
-transform:rotateY(180deg);
-font-size:14px;
-line-height:1.5;
+#chart{
+width:320px;
+height:120px;
+margin:auto;
+background:white;
+border-radius:8px;
+}
+
+.dark #chart{
+background:#1e1e1e;
 }
 
 .quiz{
-margin-top:30px;
-padding:20px;
-background:white;
-width:420px;
-margin-left:auto;
-margin-right:auto;
-border-radius:10px;
-box-shadow:0 4px 10px rgba(0,0,0,0.15);
+margin-top:20px;
 }
 
 input{
 padding:8px;
-margin-top:10px;
 width:200px;
 }
-
 </style>
 </head>
 
 <body>
 
-<h1>IELTS + Theology Vocabulary Trainer</h1>
+<h1>Vocabulary Trainer Pro</h1>
+
+<div id="stats"></div>
+
+<canvas id="chart"></canvas>
 
 <div class="controls">
-<button onclick="shuffleCards()">随机打乱</button>
-<button onclick="exportAnki()">导出 Anki</button>
-<button onclick="exportQuizlet()">导出 Quizlet</button>
+<button onclick="toggleDark()">深色</button>
+<button onclick="exportAnki()">Anki</button>
+<button onclick="exportQuizlet()">Quizlet</button>
 </div>
 
-<div class="container" id="cards"></div>
+<div id="card" class="card"></div>
 
 <div class="quiz">
-
-<h3>拼写测试</h3>
-
 <div id="quizWord"></div>
-
-<button onclick="playWord()">播放发音</button>
-
-<br>
-
-<input id="answer" placeholder="输入单词">
-
+<button onclick="playWord()">🔊</button>
 <br><br>
-
+<input id="answer" placeholder="输入单词">
+<br><br>
 <button onclick="checkAnswer()">提交</button>
-
 <div id="result"></div>
-
 </div>
 
 <script>
 
-const cards=[
-
-{
-word:"sovereignty",
-ipa:"/ˈsɒvrənti/",
-cn:"主权；至高权威",
-en:"This passage emphasizes God's absolute sovereignty.",
-zh:"这段经文强调上帝绝对的主权。"
-},
-
-{
-word:"repentance",
-ipa:"/rɪˈpentəns/",
-cn:"悔改",
-en:"Chapter 6 exposes their false repentance.",
-zh:"第六章揭露他们虚假的悔改。"
-},
-
-{
-word:"compassion",
-ipa:"/kəmˈpæʃən/",
-cn:"怜悯；同情",
-en:"They lack true compassion and knowledge of God.",
-zh:"他们缺乏真正的怜悯和对上帝的认识。"
-},
-
-{
-word:"covenant",
-ipa:"/ˈkʌvənənt/",
-cn:"盟约",
-en:"Israel transgressed the covenant.",
-zh:"以色列违背了盟约。"
-},
-
-{
-word:"apostasy",
-ipa:"/əˈpɒstəsi/",
-cn:"背教",
-en:"Harlotry symbolizes spiritual apostasy.",
-zh:"淫乱象征属灵的背教。"
-},
-
-{
-word:"grace",
-ipa:"/ɡreɪs/",
-cn:"恩典",
-en:"Humans cannot maintain goodness without God's grace.",
-zh:"没有上帝的恩典，人无法保持良善。"
-},
-
-{
-word:"judgment",
-ipa:"/ˈdʒʌdʒmənt/",
-cn:"审判",
-en:"God's judgments are clear and undeniable.",
-zh:"上帝的审判是清楚而不可否认的。"
-},
-
-{
-word:"redemption",
-ipa:"/rɪˈdempʃən/",
-cn:"救赎",
-en:"There is hope of redemption after judgment.",
-zh:"审判之后仍有救赎的盼望。"
+function toggleDark(){
+document.body.classList.toggle("dark")
 }
 
+const cards=[
+{word:"abandon",cn:"放弃"},
+{word:"ability",cn:"能力"},
+{word:"academic",cn:"学术的"},
+{word:"accurate",cn:"准确的"},
+{word:"achieve",cn:"实现"},
+{word:"benefit",cn:"益处"},
+{word:"concept",cn:"概念"},
+{word:"context",cn:"语境"},
+{word:"define",cn:"定义"},
+{word:"derive",cn:"获得"},
+{word:"economy",cn:"经济"},
+{word:"environment",cn:"环境"},
+{word:"establish",cn:"建立"},
+{word:"factor",cn:"因素"},
+{word:"function",cn:"功能"},
+{word:"identify",cn:"识别"},
+{word:"interpret",cn:"解释"},
+{word:"method",cn:"方法"},
+{word:"principle",cn:"原则"},
+{word:"process",cn:"过程"},
+{word:"research",cn:"研究"},
+{word:"respond",cn:"回应"},
+{word:"role",cn:"角色"},
+{word:"significant",cn:"重要的"},
+{word:"theory",cn:"理论"},
+{word:"tradition",cn:"传统"},
+{word:"covenant",cn:"盟约"},
+{word:"grace",cn:"恩典"},
+{word:"redemption",cn:"救赎"},
+{word:"salvation",cn:"救恩"}
 ]
 
-const container=document.getElementById("cards")
+let index=0
+const card=document.getElementById("card")
 
-function render(){
-
-container.innerHTML=""
-
-cards.forEach(c=>{
-
-let card=document.createElement("div")
-card.className="card"
+function showCard(){
+card.innerText=cards[index].word
+}
 
 card.onclick=()=>{
-card.classList.toggle("flip")
-playAudio(c.word)
+card.innerText=cards[index].cn
 }
 
-card.innerHTML=`
+let startX
 
-<div class="inner">
-
-<div class="front">
-${c.word}
-<br>
-<span>${c.ipa}</span>
-</div>
-
-<div class="back">
-<b>${c.word}</b><br>
-${c.cn}
-<br><br>
-${c.en}
-<br>
-${c.zh}
-</div>
-
-</div>
-`
-
-container.appendChild(card)
-
+card.addEventListener("touchstart",e=>{
+startX=e.touches[0].clientX
 })
 
+card.addEventListener("touchend",e=>{
+let endX=e.changedTouches[0].clientX
+if(endX-startX>50) prev()
+if(startX-endX>50) next()
+})
+
+function next(){
+index=(index+1)%cards.length
+showCard()
 }
 
-function playAudio(word){
-
-let audio=new Audio(
-`https://dict.youdao.com/dictvoice?type=2&audio=${word}`
-)
-
-audio.play()
-
-}
-
-function shuffleCards(){
-
-cards.sort(()=>Math.random()-0.5)
-render()
-
+function prev(){
+index=(index-1+cards.length)%cards.length
+showCard()
 }
 
 let quizIndex
 
 function newQuiz(){
-
 quizIndex=Math.floor(Math.random()*cards.length)
-
-document.getElementById("quizWord").innerText=
-cards[quizIndex].cn
-
+document.getElementById("quizWord").innerText=cards[quizIndex].cn
 document.getElementById("answer").value=""
-
 }
 
 function playWord(){
-playAudio(cards[quizIndex].word)
+let word=cards[quizIndex].word
+new Audio("https://dict.youdao.com/dictvoice?type=2&audio="+word).play()
 }
 
 function checkAnswer(){
 
 let input=document.getElementById("answer").value
+let correct=cards[quizIndex].word
 
-if(input.toLowerCase()==cards[quizIndex].word){
-
-document.getElementById("result").innerText="✅ 正确"
-
+if(input.toLowerCase()==correct){
+document.getElementById("result").innerText="✅"
 }else{
-
-document.getElementById("result").innerText=
-"❌ 正确答案: "+cards[quizIndex].word
-
+document.getElementById("result").innerText="❌ "+correct
 }
 
 newQuiz()
@@ -359,34 +213,23 @@ newQuiz()
 }
 
 function exportAnki(){
-
-let text=cards.map(c=>`${c.word}\t${c.cn}`).join("\n")
-
-download("anki_vocab.txt",text)
-
+let text=cards.map(c=>c.word+"\t"+c.cn).join("\n")
+download("anki.txt",text)
 }
 
 function exportQuizlet(){
-
-let text=cards.map(c=>`${c.word},${c.cn}`).join("\n")
-
-download("quizlet_vocab.csv",text)
-
+let text=cards.map(c=>c.word+","+c.cn).join("\n")
+download("quizlet.csv",text)
 }
 
 function download(name,data){
-
 let a=document.createElement("a")
-
 a.href=URL.createObjectURL(new Blob([data]))
-
 a.download=name
-
 a.click()
-
 }
 
-render()
+showCard()
 newQuiz()
 
 </script>
