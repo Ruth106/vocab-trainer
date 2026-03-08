@@ -5,7 +5,36 @@
 <title>IELTS + Theology Vocabulary Trainer</title>
 
 <style>
+<div id="stats"></div>
 
+<script>
+let stats=JSON.parse(localStorage.getItem("stats")||'{"date":"","today":0,"correct":0,"total":0,"streak":0}')
+
+let today=new Date().toISOString().slice(0,10)
+
+if(stats.date!==today){
+let yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10)
+stats.streak=(stats.date===yesterday)?stats.streak+1:1
+stats.today=0
+stats.date=today
+}
+
+function record(correct){
+stats.today++
+stats.total++
+if(correct)stats.correct++
+localStorage.setItem("stats",JSON.stringify(stats))
+render()
+}
+
+function render(){
+let rate=stats.total?Math.round(stats.correct/stats.total*100):0
+document.getElementById("stats").innerHTML=
+"今日学习 "+stats.today+" 个<br>正确率 "+rate+"%<br>连续学习 "+stats.streak+" 天"
+}
+
+render()
+</script>
 body{
 font-family:Arial;
 background:#f2f4f7;
