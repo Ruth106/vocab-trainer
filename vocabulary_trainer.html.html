@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>IELTS + Theology Vocabulary Trainer</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f4f7;
+text-align:center;
+}
+
+h1{
+margin-top:20px;
+}
+
+.controls{
+margin:20px;
+}
+
+button{
+padding:10px 15px;
+margin:5px;
+border:none;
+border-radius:6px;
+background:#2f6fed;
+color:white;
+cursor:pointer;
+}
+
+.container{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.card{
+width:260px;
+height:200px;
+margin:12px;
+perspective:1000px;
+cursor:pointer;
+}
+
+.inner{
+position:relative;
+width:100%;
+height:100%;
+transition:transform .6s;
+transform-style:preserve-3d;
+}
+
+.card.flip .inner{
+transform:rotateY(180deg);
+}
+
+.front,.back{
+position:absolute;
+width:100%;
+height:100%;
+border-radius:10px;
+backface-visibility:hidden;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+padding:15px;
+box-shadow:0 4px 10px rgba(0,0,0,0.15);
+text-align:center;
+}
+
+.front{
+background:white;
+font-size:20px;
+font-weight:bold;
+}
+
+.front span{
+font-size:14px;
+color:#666;
+}
+
+.back{
+background:#2f6fed;
+color:white;
+transform:rotateY(180deg);
+font-size:14px;
+line-height:1.5;
+}
+
+.quiz{
+margin-top:30px;
+padding:20px;
+background:white;
+width:420px;
+margin-left:auto;
+margin-right:auto;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+
+input{
+padding:8px;
+margin-top:10px;
+width:200px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>IELTS + Theology Vocabulary Trainer</h1>
+
+<div class="controls">
+<button onclick="shuffleCards()">随机打乱</button>
+<button onclick="exportAnki()">导出 Anki</button>
+<button onclick="exportQuizlet()">导出 Quizlet</button>
+</div>
+
+<div class="container" id="cards"></div>
+
+<div class="quiz">
+
+<h3>拼写测试</h3>
+
+<div id="quizWord"></div>
+
+<button onclick="playWord()">播放发音</button>
+
+<br>
+
+<input id="answer" placeholder="输入单词">
+
+<br><br>
+
+<button onclick="checkAnswer()">提交</button>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+const cards=[
+
+{
+word:"sovereignty",
+ipa:"/ˈsɒvrənti/",
+cn:"主权；至高权威",
+en:"This passage emphasizes God's absolute sovereignty.",
+zh:"这段经文强调上帝绝对的主权。"
+},
+
+{
+word:"repentance",
+ipa:"/rɪˈpentəns/",
+cn:"悔改",
+en:"Chapter 6 exposes their false repentance.",
+zh:"第六章揭露他们虚假的悔改。"
+},
+
+{
+word:"compassion",
+ipa:"/kəmˈpæʃən/",
+cn:"怜悯；同情",
+en:"They lack true compassion and knowledge of God.",
+zh:"他们缺乏真正的怜悯和对上帝的认识。"
+},
+
+{
+word:"covenant",
+ipa:"/ˈkʌvənənt/",
+cn:"盟约",
+en:"Israel transgressed the covenant.",
+zh:"以色列违背了盟约。"
+},
+
+{
+word:"apostasy",
+ipa:"/əˈpɒstəsi/",
+cn:"背教",
+en:"Harlotry symbolizes spiritual apostasy.",
+zh:"淫乱象征属灵的背教。"
+},
+
+{
+word:"grace",
+ipa:"/ɡreɪs/",
+cn:"恩典",
+en:"Humans cannot maintain goodness without God's grace.",
+zh:"没有上帝的恩典，人无法保持良善。"
+},
+
+{
+word:"judgment",
+ipa:"/ˈdʒʌdʒmənt/",
+cn:"审判",
+en:"God's judgments are clear and undeniable.",
+zh:"上帝的审判是清楚而不可否认的。"
+},
+
+{
+word:"redemption",
+ipa:"/rɪˈdempʃən/",
+cn:"救赎",
+en:"There is hope of redemption after judgment.",
+zh:"审判之后仍有救赎的盼望。"
+}
+
+]
+
+const container=document.getElementById("cards")
+
+function render(){
+
+container.innerHTML=""
+
+cards.forEach(c=>{
+
+let card=document.createElement("div")
+card.className="card"
+
+card.onclick=()=>{
+card.classList.toggle("flip")
+playAudio(c.word)
+}
+
+card.innerHTML=`
+
+<div class="inner">
+
+<div class="front">
+${c.word}
+<br>
+<span>${c.ipa}</span>
+</div>
+
+<div class="back">
+<b>${c.word}</b><br>
+${c.cn}
+<br><br>
+${c.en}
+<br>
+${c.zh}
+</div>
+
+</div>
+`
+
+container.appendChild(card)
+
+})
+
+}
+
+function playAudio(word){
+
+let audio=new Audio(
+`https://dict.youdao.com/dictvoice?type=2&audio=${word}`
+)
+
+audio.play()
+
+}
+
+function shuffleCards(){
+
+cards.sort(()=>Math.random()-0.5)
+render()
+
+}
+
+let quizIndex
+
+function newQuiz(){
+
+quizIndex=Math.floor(Math.random()*cards.length)
+
+document.getElementById("quizWord").innerText=
+cards[quizIndex].cn
+
+document.getElementById("answer").value=""
+
+}
+
+function playWord(){
+playAudio(cards[quizIndex].word)
+}
+
+function checkAnswer(){
+
+let input=document.getElementById("answer").value
+
+if(input.toLowerCase()==cards[quizIndex].word){
+
+document.getElementById("result").innerText="✅ 正确"
+
+}else{
+
+document.getElementById("result").innerText=
+"❌ 正确答案: "+cards[quizIndex].word
+
+}
+
+newQuiz()
+
+}
+
+function exportAnki(){
+
+let text=cards.map(c=>`${c.word}\t${c.cn}`).join("\n")
+
+download("anki_vocab.txt",text)
+
+}
+
+function exportQuizlet(){
+
+let text=cards.map(c=>`${c.word},${c.cn}`).join("\n")
+
+download("quizlet_vocab.csv",text)
+
+}
+
+function download(name,data){
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(new Blob([data]))
+
+a.download=name
+
+a.click()
+
+}
+
+render()
+newQuiz()
+
+</script>
+
+</body>
+</html>
